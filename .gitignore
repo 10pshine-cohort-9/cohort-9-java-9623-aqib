@@ -1,7 +1,9 @@
+# ===== Backend (Spring Boot / Maven) =====
 backend/target/
 backend/.mvn/
 backend/logs/
-backend/.env
+backend/.env.*
+!backend/.env.example
 *.log
 backend/HELP.md
 
@@ -13,10 +15,12 @@ backend/HELP.md
 *.swp
 .DS_Store
 
+# ===== Frontend (React / Vite) =====
 frontend/node_modules/
 frontend/dist/
-frontend/.env
-frontend/.env.local
+frontend/.env.*
+!frontend/.env.example
 frontend/npm-debug.log*
 
+# ===== OS / misc =====
 Thumbs.db
