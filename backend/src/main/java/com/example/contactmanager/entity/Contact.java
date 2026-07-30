@@ -66,16 +66,18 @@ public class Contact extends BaseEntity {
     /**
      * Helper to maintain both sides of the email association.
      * Detaches the email from any previous contact before adding.
-     * Idempotent: skips if the email is already associated with this contact.
+     * Idempotent: skips only if the email is already in this collection AND its back-reference points to this contact.
      */
     public void addEmail(EmailAddress email) {
-        if (emailAddresses.contains(email)) {
+        if (emailAddresses.contains(email) && email.getContact() == this) {
             return;
         }
         if (email.getContact() != null && email.getContact() != this) {
             email.getContact().removeEmail(email);
         }
-        emailAddresses.add(email);
+        if (!emailAddresses.contains(email)) {
+            emailAddresses.add(email);
+        }
         email.setContact(this);
     }
 
@@ -92,16 +94,18 @@ public class Contact extends BaseEntity {
     /**
      * Helper to maintain both sides of the phone association.
      * Detaches the phone from any previous contact before adding.
-     * Idempotent: skips if the phone is already associated with this contact.
+     * Idempotent: skips only if the phone is already in this collection AND its back-reference points to this contact.
      */
     public void addPhone(PhoneNumber phone) {
-        if (phoneNumbers.contains(phone)) {
+        if (phoneNumbers.contains(phone) && phone.getContact() == this) {
             return;
         }
         if (phone.getContact() != null && phone.getContact() != this) {
             phone.getContact().removePhone(phone);
         }
-        phoneNumbers.add(phone);
+        if (!phoneNumbers.contains(phone)) {
+            phoneNumbers.add(phone);
+        }
         phone.setContact(this);
     }
 
