@@ -10,13 +10,29 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Spring Data JPA repository for {@link Contact} entities.
+ * Provides paginated listing and case-insensitive name search scoped to a user.
+ */
 @Repository
 public interface ContactRepository extends JpaRepository<Contact, Long> {
 
+    /**
+     * Lists all contacts for a user, ordered by last name then first name.
+     *
+     * @param userId   the owner's id
+     * @param pageable pagination parameters
+     * @return a page of contacts belonging to the user
+     */
     Page<Contact> findByUserIdOrderByLastNameAscFirstNameAsc(Long userId, Pageable pageable);
 
     /**
-     * Case-insensitive search across first name and last name for a given owner.
+     * Case-insensitive search across first name, last name, and full name for a given owner.
+     *
+     * @param userId   the owner's id
+     * @param query    the search term
+     * @param pageable pagination parameters
+     * @return a page of matching contacts
      */
     @Query("select c from Contact c where c.user.id = :userId "
             + "and (lower(c.firstName) like lower(concat('%', :query, '%')) "
@@ -26,5 +42,12 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
                                 @Param("query") String query,
                                 Pageable pageable);
 
+    /**
+     * Finds a contact by id only if it belongs to the given user (ownership check).
+     *
+     * @param id     the contact id
+     * @param userId the owner's id
+     * @return an Optional containing the contact if found and owned by the user
+     */
     Optional<Contact> findByIdAndUserId(Long id, Long userId);
 }

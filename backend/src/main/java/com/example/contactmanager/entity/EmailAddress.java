@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+/**
+ * JPA entity for a labeled email address belonging to a contact.
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

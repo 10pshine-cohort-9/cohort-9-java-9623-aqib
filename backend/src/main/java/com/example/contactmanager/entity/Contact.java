@@ -20,6 +20,9 @@ import lombok.experimental.SuperBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JPA entity for a contact owned by a user, with labeled emails and phone numbers.
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -62,47 +65,65 @@ public class Contact extends BaseEntity {
 
     /**
      * Helper to maintain both sides of the email association.
+     * Detaches the email from any previous contact before adding.
      */
     public void addEmail(EmailAddress email) {
+        if (email.getContact() != null && email.getContact() != this) {
+            email.getContact().removeEmail(email);
+        }
         emailAddresses.add(email);
         email.setContact(this);
     }
 
     /**
      * Helper to remove an email and break the association cleanly.
+     * Only clears the back-reference if the email was actually in this contact's list.
      */
     public void removeEmail(EmailAddress email) {
-        emailAddresses.remove(email);
-        email.setContact(null);
+        if (emailAddresses.remove(email)) {
+            email.setContact(null);
+        }
     }
 
     /**
      * Helper to maintain both sides of the phone association.
+     * Detaches the phone from any previous contact before adding.
      */
     public void addPhone(PhoneNumber phone) {
+        if (phone.getContact() != null && phone.getContact() != this) {
+            phone.getContact().removePhone(phone);
+        }
         phoneNumbers.add(phone);
         phone.setContact(this);
     }
 
     /**
      * Helper to remove a phone and break the association cleanly.
+     * Only clears the back-reference if the phone was actually in this contact's list.
      */
     public void removePhone(PhoneNumber phone) {
-        phoneNumbers.remove(phone);
-        phone.setContact(null);
+        if (phoneNumbers.remove(phone)) {
+            phone.setContact(null);
+        }
     }
 
+    /**
+     * Replaces all email addresses, detaching removed children and attaching new ones
+     * through the helper methods so back-references stay consistent.
+     */
     public void setEmailAddresses(List<EmailAddress> emails) {
-        emailAddresses.clear();
-        if (emails != null) {
-            emails.forEach(this::addEmail);
-        }
+        List<EmailAddress> incoming = emails == null ? List.of() : new ArrayList<>(emails);
+        new ArrayList<>(emailAddresses).forEach(this::removeEmail);
+        incoming.forEach(this::addEmail);
     }
 
+    /**
+     * Replaces all phone numbers, detaching removed children and attaching new ones
+     * through the helper methods so back-references stay consistent.
+     */
     public void setPhoneNumbers(List<PhoneNumber> phones) {
-        phoneNumbers.clear();
-        if (phones != null) {
-            phones.forEach(this::addPhone);
-        }
+        List<PhoneNumber> incoming = phones == null ? List.of() : new ArrayList<>(phones);
+        new ArrayList<>(phoneNumbers).forEach(this::removePhone);
+        incoming.forEach(this::addPhone);
     }
 }

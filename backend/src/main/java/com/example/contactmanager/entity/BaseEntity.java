@@ -9,6 +9,7 @@ import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.Hibernate;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,20 +40,31 @@ public abstract class BaseEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * Entity equality based on primary key and proxy-aware class comparison.
+     *
+     * @param o the object to compare
+     * @return true if both are the same entity type and share a non-null id
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
             return false;
         }
         BaseEntity other = (BaseEntity) o;
         return id != null && id.equals(other.id);
     }
 
+    /**
+     * Stable hash code based on the entity class, not the id (which changes on persist).
+     *
+     * @return the entity class hash code
+     */
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Hibernate.getClass(this).hashCode();
     }
 }

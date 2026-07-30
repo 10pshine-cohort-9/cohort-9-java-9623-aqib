@@ -17,6 +17,9 @@ import lombok.experimental.SuperBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JPA entity for an application user who owns contacts.
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -55,12 +58,16 @@ public class User extends BaseEntity {
     private List<Contact> contacts = new ArrayList<>();
 
     public void addContact(Contact contact) {
+        if (contact.getUser() != null && contact.getUser() != this) {
+            contact.getUser().removeContact(contact);
+        }
         contacts.add(contact);
         contact.setUser(this);
     }
 
     public void removeContact(Contact contact) {
-        contacts.remove(contact);
-        contact.setUser(null);
+        if (contacts.remove(contact)) {
+            contact.setUser(null);
+        }
     }
 }
