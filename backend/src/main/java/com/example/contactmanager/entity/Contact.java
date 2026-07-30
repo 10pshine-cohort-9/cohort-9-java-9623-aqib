@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
@@ -31,27 +31,33 @@ import java.util.List;
 })
 public class Contact extends BaseEntity {
 
+    @Setter
     @Column(name = "first_name", nullable = false, length = 60)
     private String firstName;
 
+    @Setter
     @Column(name = "last_name", nullable = false, length = 60)
     private String lastName;
 
+    @Setter
     @Column(name = "title", length = 100)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @Setter(AccessLevel.PROTECTED)
     private User user;
 
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL,
-            orphanRemoval = true, fetch = FetchType.EAGER)
+            orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @Setter(AccessLevel.NONE)
     private List<EmailAddress> emailAddresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL,
-            orphanRemoval = true, fetch = FetchType.EAGER)
+            orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @Setter(AccessLevel.NONE)
     private List<PhoneNumber> phoneNumbers = new ArrayList<>();
 
     /**
@@ -62,18 +68,25 @@ public class Contact extends BaseEntity {
         email.setContact(this);
     }
 
-
+    /**
+     * Helper to remove an email and break the association cleanly.
+     */
     public void removeEmail(EmailAddress email) {
         emailAddresses.remove(email);
         email.setContact(null);
     }
 
+    /**
+     * Helper to maintain both sides of the phone association.
+     */
     public void addPhone(PhoneNumber phone) {
         phoneNumbers.add(phone);
         phone.setContact(this);
     }
 
-
+    /**
+     * Helper to remove a phone and break the association cleanly.
+     */
     public void removePhone(PhoneNumber phone) {
         phoneNumbers.remove(phone);
         phone.setContact(null);

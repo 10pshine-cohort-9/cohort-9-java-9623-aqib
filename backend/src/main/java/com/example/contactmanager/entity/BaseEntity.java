@@ -1,4 +1,4 @@
-]package com.example.contactmanager.entity;
+package com.example.contactmanager.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -8,17 +8,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
+/**
+ * Base entity providing shared identity and audit columns for all entities.
+ * Uses composition-friendly inheritance via {@link MappedSuperclass} so that
+ * each subclass gets its own table without a shared base table.
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @MappedSuperclass
 @SuperBuilder
@@ -42,14 +44,15 @@ public abstract class BaseEntity {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof BaseEntity other)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        BaseEntity other = (BaseEntity) o;
         return id != null && id.equals(other.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return getClass().hashCode();
     }
 }
