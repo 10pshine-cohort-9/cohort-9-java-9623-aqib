@@ -66,8 +66,12 @@ public class Contact extends BaseEntity {
     /**
      * Helper to maintain both sides of the email association.
      * Detaches the email from any previous contact before adding.
+     * Idempotent: skips if the email is already associated with this contact.
      */
     public void addEmail(EmailAddress email) {
+        if (emailAddresses.contains(email)) {
+            return;
+        }
         if (email.getContact() != null && email.getContact() != this) {
             email.getContact().removeEmail(email);
         }
@@ -88,8 +92,12 @@ public class Contact extends BaseEntity {
     /**
      * Helper to maintain both sides of the phone association.
      * Detaches the phone from any previous contact before adding.
+     * Idempotent: skips if the phone is already associated with this contact.
      */
     public void addPhone(PhoneNumber phone) {
+        if (phoneNumbers.contains(phone)) {
+            return;
+        }
         if (phone.getContact() != null && phone.getContact() != this) {
             phone.getContact().removePhone(phone);
         }
@@ -110,9 +118,15 @@ public class Contact extends BaseEntity {
     /**
      * Replaces all email addresses, detaching removed children and attaching new ones
      * through the helper methods so back-references stay consistent.
+     * Validates all incoming elements before mutating the collection.
      */
     public void setEmailAddresses(List<EmailAddress> emails) {
         List<EmailAddress> incoming = emails == null ? List.of() : new ArrayList<>(emails);
+        incoming.forEach(e -> {
+            if (e == null) {
+                throw new IllegalArgumentException("Email list must not contain null elements");
+            }
+        });
         new ArrayList<>(emailAddresses).forEach(this::removeEmail);
         incoming.forEach(this::addEmail);
     }
@@ -120,9 +134,15 @@ public class Contact extends BaseEntity {
     /**
      * Replaces all phone numbers, detaching removed children and attaching new ones
      * through the helper methods so back-references stay consistent.
+     * Validates all incoming elements before mutating the collection.
      */
     public void setPhoneNumbers(List<PhoneNumber> phones) {
         List<PhoneNumber> incoming = phones == null ? List.of() : new ArrayList<>(phones);
+        incoming.forEach(p -> {
+            if (p == null) {
+                throw new IllegalArgumentException("Phone list must not contain null elements");
+            }
+        });
         new ArrayList<>(phoneNumbers).forEach(this::removePhone);
         incoming.forEach(this::addPhone);
     }
