@@ -50,7 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                log.debug("Authenticated user {} for {}", claims.getSubject(), request.getRequestURI());
+                log.debug("Authenticated user id={} for {}", userId, request.getRequestURI());
             }
         } catch (Exception ex) {
             log.warn("JWT authentication failed: {}", ex.getMessage());

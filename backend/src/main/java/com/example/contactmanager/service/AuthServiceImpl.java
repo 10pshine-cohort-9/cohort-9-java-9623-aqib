@@ -38,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        log.info("Registering new user firstName={} lastName={}", request.getFirstName(), request.getLastName());
+        log.info("Registering new user");
         validateRegistration(request);
 
         String email = StringUtils.hasText(request.getEmail()) ? request.getEmail().trim() : null;
