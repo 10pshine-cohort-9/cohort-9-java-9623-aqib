@@ -13,10 +13,12 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 /**
- * Utility for issuing and validating JWT tokens. The signing key is derived from
- * the configured secret and never logged.
+ * Utility for issuing and validating JWT access and refresh tokens.
+ * Access tokens are short-lived (stateless); refresh tokens carry a jti claim
+ * that is checked against the database for revocation (stateful).
  */
 @Component
 public class JwtUtil {
@@ -26,8 +28,11 @@ public class JwtUtil {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration-ms}")
-    private long expirationMs;
+    @Value("${app.jwt.access-expiration-ms}")
+    private long accessExpirationMs;
+
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
 
     @Value("${app.jwt.issuer}")
     private String issuer;
@@ -39,19 +44,55 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Generates a short-lived access token (stateless, no DB lookup needed).
+     *
+     * @param userId  the user's database id
+     * @param subject the user's email or phone
+     * @return the signed access JWT
+     */
     public String generateToken(Long userId, String subject) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
+        Date expiry = new Date(now.getTime() + accessExpirationMs);
         return Jwts.builder()
                 .issuer(issuer)
                 .subject(subject)
                 .claim("uid", userId)
+                .claim("type", "access")
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)
                 .compact();
     }
 
+    /**
+     * Generates a long-lived refresh token with a unique jti claim for DB-backed revocation.
+     *
+     * @param userId  the user's database id
+     * @param subject the user's email or phone
+     * @return the signed refresh JWT
+     */
+    public String generateRefreshToken(Long userId, String subject) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + refreshExpirationMs);
+        return Jwts.builder()
+                .issuer(issuer)
+                .subject(subject)
+                .claim("uid", userId)
+                .claim("type", "refresh")
+                .id(UUID.randomUUID().toString())
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
+                .compact();
+    }
+
+    /**
+     * Parses and verifies a JWT, returning its claims.
+     *
+     * @param token the JWT string
+     * @return the parsed claims
+     */
     public Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)
@@ -61,6 +102,12 @@ public class JwtUtil {
                 .getPayload();
     }
 
+    /**
+     * Checks whether a token is syntactically valid and unexpired.
+     *
+     * @param token the JWT string
+     * @return true if the token parses successfully
+     */
     public boolean isValid(String token) {
         try {
             parseClaims(token);
@@ -71,6 +118,12 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * Extracts the user id from a JWT.
+     *
+     * @param token the JWT string
+     * @return the user id
+     */
     public Long extractUserId(String token) {
         Claims claims = parseClaims(token);
         Object uid = claims.get("uid");
@@ -80,7 +133,32 @@ public class JwtUtil {
         throw new JwtException("Token is missing user id claim");
     }
 
-    public long getExpirationMs() {
-        return expirationMs;
+    /**
+     * Extracts the jti (JWT ID) claim from a refresh token for DB lookup.
+     *
+     * @param token the refresh JWT string
+     * @return the jti claim value
+     */
+    public String extractJti(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getId();
+    }
+
+    /**
+     * Returns the access token expiration in milliseconds.
+     *
+     * @return access token expiration
+     */
+    public long getAccessExpirationMs() {
+        return accessExpirationMs;
+    }
+
+    /**
+     * Returns the refresh token expiration in milliseconds.
+     *
+     * @return refresh token expiration
+     */
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
     }
 }
