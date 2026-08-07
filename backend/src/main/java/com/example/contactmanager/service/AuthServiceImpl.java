@@ -73,7 +73,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         log.info("Login attempt for identifier={}", mask(request.getIdentifier()));
         User user = userRepository.findByEmail(request.getIdentifier().trim())
@@ -106,9 +105,12 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Refresh token has expired");
         }
 
-        // Rotate: revoke old token, issue new pair
-        stored.setRevoked(true);
-        refreshTokenRepository.save(stored);
+        // Atomically claim the token: UPDATE ... WHERE jti = :jti AND revoked = false
+        int claimed = refreshTokenRepository.revokeIfNotRevoked(jti);
+        if (claimed != 1) {
+            log.warn("Concurrent refresh attempt rejected for jti={}", jti);
+            throw new InvalidCredentialsException("Refresh token has been revoked");
+        }
 
         User user = stored.getUser();
         log.info("Token refresh for user id={}", user.getId());

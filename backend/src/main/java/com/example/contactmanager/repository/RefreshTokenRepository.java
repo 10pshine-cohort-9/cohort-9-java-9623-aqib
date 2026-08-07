@@ -33,4 +33,15 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Modifying
     @Query("update RefreshToken r set r.revoked = true where r.user.id = :userId and r.revoked = false")
     int revokeAllByUserId(@Param("userId") Long userId);
+
+    /**
+     * Atomically revokes a single refresh token only if it is not already revoked.
+     * Returns 1 if claimed (row updated), 0 if already revoked or not found.
+     *
+     * @param jti the JWT ID to revoke
+     * @return 1 if claimed, 0 otherwise
+     */
+    @Modifying
+    @Query("update RefreshToken r set r.revoked = true where r.jti = :jti and r.revoked = false")
+    int revokeIfNotRevoked(@Param("jti") String jti);
 }
