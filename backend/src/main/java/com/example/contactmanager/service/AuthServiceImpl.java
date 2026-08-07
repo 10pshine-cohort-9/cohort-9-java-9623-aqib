@@ -4,13 +4,16 @@ import com.example.contactmanager.dto.AuthResponse;
 import com.example.contactmanager.dto.ChangePasswordRequest;
 import com.example.contactmanager.dto.DtoMapper;
 import com.example.contactmanager.dto.LoginRequest;
+import com.example.contactmanager.dto.RefreshTokenRequest;
 import com.example.contactmanager.dto.RegisterRequest;
 import com.example.contactmanager.dto.UserResponse;
+import com.example.contactmanager.entity.RefreshToken;
 import com.example.contactmanager.entity.User;
 import com.example.contactmanager.exception.BadRequestException;
 import com.example.contactmanager.exception.EmailOrPhoneRequiredException;
 import com.example.contactmanager.exception.InvalidCredentialsException;
 import com.example.contactmanager.exception.UserAlreadyExistsException;
+import com.example.contactmanager.repository.RefreshTokenRepository;
 import com.example.contactmanager.repository.UserRepository;
 import com.example.contactmanager.security.JwtUtil;
 import org.slf4j.Logger;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+
 @Service
 @Transactional
 public class AuthServiceImpl implements AuthService {
@@ -27,11 +32,14 @@ public class AuthServiceImpl implements AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthServiceImpl(UserRepository userRepository, RefreshTokenRepository refreshTokenRepository,
+                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
@@ -81,6 +89,33 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        if (!jwtUtil.isValid(token)) {
+            throw new InvalidCredentialsException("Invalid refresh token");
+        }
+        String jti = jwtUtil.extractJti(token);
+        RefreshToken stored = refreshTokenRepository.findByJti(jti)
+                .orElseThrow(() -> new InvalidCredentialsException("Refresh token not recognised"));
+
+        if (stored.isRevoked()) {
+            log.warn("Refresh attempt with revoked token jti={}", jti);
+            throw new InvalidCredentialsException("Refresh token has been revoked");
+        }
+        if (stored.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidCredentialsException("Refresh token has expired");
+        }
+
+        // Rotate: revoke old token, issue new pair
+        stored.setRevoked(true);
+        refreshTokenRepository.save(stored);
+
+        User user = stored.getUser();
+        log.info("Token refresh for user id={}", user.getId());
+        return buildAuthResponse(user);
+    }
+
+    @Override
     public void changePassword(Long userId, ChangePasswordRequest request) {
         log.info("Change password requested for user id={}", userId);
         User user = userRepository.findById(userId)
@@ -95,7 +130,23 @@ public class AuthServiceImpl implements AuthService {
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        log.info("Password changed successfully for user id={}", userId);
+
+        // Invalidate all existing sessions (revoke all refresh tokens for this user)
+        int revoked = refreshTokenRepository.revokeAllByUserId(userId);
+        log.info("Password changed and {} refresh token(s) revoked for user id={}", revoked, userId);
+    }
+
+    @Override
+    public void logout(String refreshToken) {
+        if (!StringUtils.hasText(refreshToken) || !jwtUtil.isValid(refreshToken)) {
+            return;
+        }
+        String jti = jwtUtil.extractJti(refreshToken);
+        refreshTokenRepository.findByJti(jti).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+            log.info("Refresh token revoked on logout jti={}", jti);
+        });
     }
 
     private void validateRegistration(RegisterRequest request) {
@@ -108,13 +159,27 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResponse buildAuthResponse(User user) {
         String subject = StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getPhone();
-        String token = jwtUtil.generateToken(user.getId(), subject);
+        String accessToken = jwtUtil.generateToken(user.getId(), subject);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), subject);
+        persistRefreshToken(refreshToken, user);
         UserResponse userResponse = DtoMapper.toUserResponse(user);
         return AuthResponse.builder()
-                .token(token)
+                .token(accessToken)
+                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .user(userResponse)
                 .build();
+    }
+
+    private void persistRefreshToken(String token, User user) {
+        String jti = jwtUtil.extractJti(token);
+        RefreshToken entity = RefreshToken.builder()
+                .jti(jti)
+                .user(user)
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getRefreshExpirationMs() / 1000))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(entity);
     }
 
     private static String mask(String identifier) {

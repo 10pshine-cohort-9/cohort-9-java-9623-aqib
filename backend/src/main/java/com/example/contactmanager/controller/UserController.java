@@ -3,6 +3,7 @@ package com.example.contactmanager.controller;
 import com.example.contactmanager.dto.ApiResponse;
 import com.example.contactmanager.dto.ChangePasswordRequest;
 import com.example.contactmanager.dto.DtoMapper;
+import com.example.contactmanager.dto.RefreshTokenRequest;
 import com.example.contactmanager.dto.UserResponse;
 import com.example.contactmanager.entity.User;
 import com.example.contactmanager.security.SecurityUtils;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * User profile, password change, and logout endpoints.
+ */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -49,8 +53,10 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        log.info("POST /api/users/logout");
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("POST /api/users/logout - user id={}", userId);
+        authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.message("Logged out successfully"));
     }
 }
