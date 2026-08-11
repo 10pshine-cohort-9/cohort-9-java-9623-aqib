@@ -1,5 +1,6 @@
 package com.example.contactmanager.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -7,17 +8,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Response payload containing the JWT access token, refresh token, and authenticated user details.
+ * Request payload for refreshing an access token or logging out.
  */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthResponse {
+public class RefreshTokenRequest {
 
-    private String token;
+    @NotBlank(message = "Refresh token is required")
     private String refreshToken;
-    private String tokenType;
-    private UserResponse user;
 }
