@@ -101,8 +101,8 @@ export function DotPattern({
       const col = i % cols
       const row = Math.floor(i / cols)
       return {
-        x: col * width + cx + x,
-        y: row * height + cy + y,
+        x: col * safeWidth + cx + x,
+        y: row * safeHeight + cy + y,
         delay: Math.random() * 5,
         duration: Math.random() * 3 + 2,
       }
