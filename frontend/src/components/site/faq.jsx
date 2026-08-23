@@ -19,17 +19,12 @@ const faqs = [
   {
     question: 'What happens when I delete a contact?',
     answer:
-      'You are asked to confirm first. After confirming, the contact leaves your list and the change is written to your activity trail.',
-  },
-  {
-    question: 'Can I change my password later?',
-    answer:
-      'Open your profile screen and use the change password action. You can rotate it as often as you like.',
+      'You are asked to confirm first. After confirming, the contact is permanently removed from your address book.',
   },
   {
     question: 'Is my address book private?',
     answer:
-      'Contacts are scoped to your account. Nothing is shared with other users unless you are on a Team plan and explicitly share a list.',
+      'Contacts are scoped to your account. Nothing is shared with other users.',
   },
 ]
 

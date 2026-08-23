@@ -16,7 +16,13 @@ export const tokenStore = {
   getRefreshToken: () => localStorage.getItem(REFRESH_KEY),
   getUser: () => {
     const raw = localStorage.getItem(USER_KEY)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      localStorage.removeItem(USER_KEY)
+      return null
+    }
   },
   set: (token, refreshToken, user) => {
     localStorage.setItem(TOKEN_KEY, token)

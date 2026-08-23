@@ -22,6 +22,11 @@ interface ShineBorderProps extends React.HTMLAttributes<HTMLDivElement> {
   shineColor?: string | string[]
 }
 
+type CSSPropertiesWithVars = React.CSSProperties & {
+  "--border-width"?: string
+  "--duration"?: string
+}
+
 /**
  * Shine Border
  *
@@ -51,7 +56,7 @@ export function ShineBorder({
           maskComposite: "exclude",
           padding: "var(--border-width)",
           ...style,
-        } as React.CSSProperties
+        } as CSSPropertiesWithVars
       }
       className={cn(
         "motion-safe:animate-shine pointer-events-none absolute inset-0 size-full rounded-[inherit] will-change-[background-position]",

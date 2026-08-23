@@ -46,10 +46,13 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    await apiLogout(tokenStore.getRefreshToken())
-    tokenStore.clear()
-    setToken(null)
-    setUser(null)
+    try {
+      await apiLogout(tokenStore.getRefreshToken())
+    } finally {
+      tokenStore.clear()
+      setToken(null)
+      setUser(null)
+    }
   }
 
   const value = {

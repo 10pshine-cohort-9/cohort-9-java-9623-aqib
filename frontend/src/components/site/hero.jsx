@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, PlayCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { AppPreview } from '@/components/site/app-preview'
 
 export function Hero() {
@@ -26,31 +27,25 @@ export function Hero() {
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-          <Button
-            size="lg"
-            className="h-11 rounded-full pr-1.5 pl-5 text-sm"
-            nativeButton={false}
-            render={
-              <Link to="/register">
-                Get started free
-                <span className="ml-2 flex size-8 items-center justify-center rounded-full bg-primary-foreground/15">
-                  <ArrowUpRight className="size-4" />
-                </span>
-              </Link>
-            }
-          />
-          <Button
-            variant="ghost"
-            size="lg"
-            className="h-11 rounded-full px-4 text-sm text-muted-foreground"
-            nativeButton={false}
-            render={
-              <a href="#workflow">
-                <PlayCircle data-icon="inline-start" />
-                Watch the tour
-              </a>
-            }
-          />
+          <Link
+            to="/register"
+            className={cn(buttonVariants({ size: 'lg' }), 'h-11 rounded-full pr-1.5 pl-5 text-sm')}
+          >
+            Get started free
+            <span className="ml-2 flex size-8 items-center justify-center rounded-full bg-primary-foreground/15">
+              <ArrowUpRight className="size-4" />
+            </span>
+          </Link>
+          <a
+            href="#workflow"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'lg' }),
+              'h-11 rounded-full px-4 text-sm text-muted-foreground',
+            )}
+          >
+            <PlayCircle data-icon="inline-start" />
+            Watch the tour
+          </a>
         </div>
       </div>
 

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @Transactional
@@ -126,12 +127,13 @@ public class ContactServiceImpl implements ContactService {
         if (emails == null || emails.isEmpty()) {
             return;
         }
-        validateNoDuplicates(emails.stream().map(EmailDto::getValue).map(String::toLowerCase).toList(),
+        validateNoDuplicates(emails.stream().map(EmailDto::getValue)
+                        .map(value -> value.trim().toLowerCase(Locale.ROOT)).toList(),
                 "email");
         for (EmailDto dto : emails) {
             EmailAddress email = EmailAddress.builder()
                     .value(dto.getValue().trim())
-                    .label(EmailLabel.valueOf(dto.getLabel().trim().toUpperCase()))
+                    .label(parseEmailLabel(dto.getLabel()))
                     .build();
             contact.addEmail(email);
         }
@@ -145,12 +147,13 @@ public class ContactServiceImpl implements ContactService {
         if (phones == null || phones.isEmpty()) {
             return;
         }
-        validateNoDuplicates(phones.stream().map(PhoneDto::getValue).map(String::toLowerCase).toList(),
+        validateNoDuplicates(phones.stream().map(PhoneDto::getValue)
+                        .map(value -> value.trim().toLowerCase(Locale.ROOT)).toList(),
                 "phone number");
         for (PhoneDto dto : phones) {
             PhoneNumber phone = PhoneNumber.builder()
                     .value(dto.getValue().trim())
-                    .label(PhoneLabel.valueOf(dto.getLabel().trim().toUpperCase()))
+                    .label(parsePhoneLabel(dto.getLabel()))
                     .build();
             contact.addPhone(phone);
         }
@@ -160,6 +163,22 @@ public class ContactServiceImpl implements ContactService {
         long unique = values.stream().distinct().count();
         if (unique != values.size()) {
             throw new BadRequestException("Duplicate " + field + " values are not allowed");
+        }
+    }
+
+    private EmailLabel parseEmailLabel(String label) {
+        try {
+            return EmailLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported email label: " + label);
+        }
+    }
+
+    private PhoneLabel parsePhoneLabel(String label) {
+        try {
+            return PhoneLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported phone label: " + label);
         }
     }
 }

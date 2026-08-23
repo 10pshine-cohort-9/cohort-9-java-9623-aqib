@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, MoreHorizontal, Pencil, Plus, Search, Trash2, UsersRound, X } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -38,6 +38,7 @@ import { toast } from 'sonner'
 const PAGE_SIZE = 8
 
 export default function ContactsPage() {
+  const fetchId = useRef(0)
   const [contacts, setContacts] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -55,10 +56,12 @@ export default function ContactsPage() {
   }, [])
 
   const fetchContacts = useCallback(async () => {
+    const requestId = ++fetchId.current
     setLoading(true)
     setError('')
     try {
       const data = await listContacts({ page, size: PAGE_SIZE, search: debouncedSearch })
+      if (requestId !== fetchId.current) return
       setContacts(data.content)
       setTotalPages(data.totalPages)
       setTotalElements(data.totalElements)
@@ -67,10 +70,11 @@ export default function ContactsPage() {
         setPage(Math.max(0, data.totalPages - 1))
       }
     } catch (err) {
+      if (requestId !== fetchId.current) return
       setError(getErrorMessage(err, 'Failed to load contacts.'))
       setContacts([])
     } finally {
-      setLoading(false)
+      if (requestId === fetchId.current) setLoading(false)
     }
   }, [page, debouncedSearch])
 

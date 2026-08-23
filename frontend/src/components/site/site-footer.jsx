@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { KithMark } from '@/components/site/kith-mark'
+import { cn } from '@/lib/utils'
 
 const columns = [
   {
@@ -22,15 +23,6 @@ const columns = [
       { label: 'Profile', href: '/profile' },
     ],
   },
-  {
-    title: 'Company',
-    links: [
-      { label: 'About', href: '#' },
-      { label: 'Changelog', href: '#' },
-      { label: 'Privacy', href: '#' },
-      { label: 'Contact', href: '#' },
-    ],
-  },
 ]
 
 export function SiteFooter() {
@@ -43,22 +35,18 @@ export function SiteFooter() {
         <p className="max-w-md text-sm leading-relaxed text-primary-foreground/70">
           No setup required. Add your first contact in under a minute.
         </p>
-        <Button
-          size="lg"
-          variant="secondary"
-          className="h-11 rounded-full pr-1.5 pl-5"
-          render={
-            <Link to="/register">
-              Create your account
-              <span className="ml-2 flex size-8 items-center justify-center rounded-full bg-primary/10">
-                <ArrowUpRight className="size-4" />
-              </span>
-            </Link>
-          }
-        />
+        <Link
+          to="/register"
+          className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'h-11 rounded-full pr-1.5 pl-5')}
+        >
+          Create your account
+          <span className="ml-2 flex size-8 items-center justify-center rounded-full bg-primary/10">
+            <ArrowUpRight className="size-4" />
+          </span>
+        </Link>
       </div>
 
-      <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         <div className="flex flex-col gap-3">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <KithMark className="size-5" />

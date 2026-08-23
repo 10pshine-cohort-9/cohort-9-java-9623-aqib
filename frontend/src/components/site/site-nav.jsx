@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { ArrowUpRight, MenuIcon, XIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { KithMark } from '@/components/site/kith-mark'
 import { cn } from '@/lib/utils'
 
@@ -40,31 +40,31 @@ export function SiteNav() {
           </ul>
 
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden rounded-full sm:inline-flex"
-              nativeButton={false}
-              render={<Link to="/login">Log in</Link>}
-            />
-            <Button
-              size="sm"
-              className="rounded-full pr-1.5 pl-3"
-              nativeButton={false}
-              render={
-                <Link to="/register">
-                  Get started
-                  <span className="ml-1.5 flex size-5 items-center justify-center rounded-full bg-primary-foreground/15">
-                    <ArrowUpRight className="size-3" />
-                  </span>
-                </Link>
-              }
-            />
+            <Link
+              to="/login"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'hidden rounded-full sm:inline-flex',
+              )}
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className={cn(buttonVariants({ size: 'sm' }), 'rounded-full pr-1.5 pl-3')}
+            >
+              Get started
+              <span className="ml-1.5 flex size-5 items-center justify-center rounded-full bg-primary-foreground/15">
+                <ArrowUpRight className="size-3" />
+              </span>
+            </Link>
             <Button
               variant="ghost"
               size="icon-sm"
               className="rounded-full md:hidden"
               aria-label={open ? 'Close menu' : 'Open menu'}
+              aria-expanded={open}
+              aria-controls="site-nav-mobile-menu"
               onClick={() => setOpen((value) => !value)}
             >
               {open ? <XIcon /> : <MenuIcon />}
@@ -72,7 +72,7 @@ export function SiteNav() {
           </div>
         </div>
 
-        <div className={cn('md:hidden', open ? 'block' : 'hidden')}>
+        <div id="site-nav-mobile-menu" className={cn('md:hidden', open ? 'block' : 'hidden')}>
           <ul className="flex flex-col gap-1 px-1 pt-2 pb-1">
             {links.map((link) => (
               <li key={link.href}>

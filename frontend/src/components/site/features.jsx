@@ -46,7 +46,7 @@ const features = [
     titleTop: 'Your account, your rules.',
     titleBottom: '',
     description:
-      'Sign up with an email or phone number and rotate your password from the profile screen at any time.',
+      'Sign up with an email or phone number. Your account stays private to you.',
     image: '/your_account.png',
     span: 'lg:col-span-12 lg:row-span-2',
     layout: 'side',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Mail, Pencil, Phone, Trash2 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -28,6 +28,7 @@ function formatDate(value) {
 export default function ContactDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const fetchId = useRef(0)
   const [contact, setContact] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,15 +40,18 @@ export default function ContactDetailPage() {
   }, [])
 
   const fetchContact = useCallback(async () => {
+    const requestId = ++fetchId.current
     setLoading(true)
     setError('')
     try {
       const data = await getContact(id)
+      if (requestId !== fetchId.current) return
       setContact(data)
     } catch (err) {
+      if (requestId !== fetchId.current) return
       setError(getErrorMessage(err, 'Failed to load contact.'))
     } finally {
-      setLoading(false)
+      if (requestId === fetchId.current) setLoading(false)
     }
   }, [id])
 
