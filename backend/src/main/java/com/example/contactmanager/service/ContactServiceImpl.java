@@ -17,6 +17,7 @@ import com.example.contactmanager.exception.BadRequestException;
 import com.example.contactmanager.exception.ResourceNotFoundException;
 import com.example.contactmanager.repository.ContactRepository;
 import com.example.contactmanager.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -25,9 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 @Transactional
@@ -37,10 +36,13 @@ public class ContactServiceImpl implements ContactService {
 
     private final ContactRepository contactRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
-    public ContactServiceImpl(ContactRepository contactRepository, UserRepository userRepository) {
+    public ContactServiceImpl(ContactRepository contactRepository, UserRepository userRepository,
+                               EntityManager entityManager) {
         this.contactRepository = contactRepository;
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -53,8 +55,8 @@ public class ContactServiceImpl implements ContactService {
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
                 .title(StringUtils.hasText(request.getTitle()) ? request.getTitle().trim() : null)
+                .user(owner)
                 .build();
-        owner.addContact(contact);
         applyEmails(contact, request.getEmails());
         applyPhones(contact, request.getPhones());
 
@@ -115,34 +117,40 @@ public class ContactServiceImpl implements ContactService {
     }
 
     private void applyEmails(Contact contact, List<EmailDto> emails) {
-        new ArrayList<>(contact.getEmailAddresses()).forEach(contact::removeEmail);
+        contact.getEmailAddresses().clear();
+        // Force Hibernate to execute the orphan-removal DELETEs now, before the
+        // new rows are inserted. Without this flush the deferred INSERTs collide
+        // with the not-yet-deleted old rows on the unique (contact_id, email_address)
+        // constraint, causing a DataIntegrityViolationException on update.
+        entityManager.flush();
         if (emails == null || emails.isEmpty()) {
             return;
         }
-        validateNoDuplicates(emails.stream().map(EmailDto::getValue)
-                        .map(value -> value.trim().toLowerCase(Locale.ROOT)).toList(),
+        validateNoDuplicates(emails.stream().map(EmailDto::getValue).map(String::toLowerCase).toList(),
                 "email");
         for (EmailDto dto : emails) {
             EmailAddress email = EmailAddress.builder()
                     .value(dto.getValue().trim())
-                    .label(parseEmailLabel(dto.getLabel()))
+                    .label(EmailLabel.valueOf(dto.getLabel().trim().toUpperCase()))
                     .build();
             contact.addEmail(email);
         }
     }
 
     private void applyPhones(Contact contact, List<PhoneDto> phones) {
-        new ArrayList<>(contact.getPhoneNumbers()).forEach(contact::removePhone);
+        contact.getPhoneNumbers().clear();
+        // Force Hibernate to execute the orphan-removal DELETEs now, before the
+        // new rows are inserted (same reason as applyEmails).
+        entityManager.flush();
         if (phones == null || phones.isEmpty()) {
             return;
         }
-        validateNoDuplicates(phones.stream().map(PhoneDto::getValue)
-                        .map(value -> value.trim().toLowerCase(Locale.ROOT)).toList(),
+        validateNoDuplicates(phones.stream().map(PhoneDto::getValue).map(String::toLowerCase).toList(),
                 "phone number");
         for (PhoneDto dto : phones) {
             PhoneNumber phone = PhoneNumber.builder()
                     .value(dto.getValue().trim())
-                    .label(parsePhoneLabel(dto.getLabel()))
+                    .label(PhoneLabel.valueOf(dto.getLabel().trim().toUpperCase()))
                     .build();
             contact.addPhone(phone);
         }
@@ -152,22 +160,6 @@ public class ContactServiceImpl implements ContactService {
         long unique = values.stream().distinct().count();
         if (unique != values.size()) {
             throw new BadRequestException("Duplicate " + field + " values are not allowed");
-        }
-    }
-
-    private EmailLabel parseEmailLabel(String label) {
-        try {
-            return EmailLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid email label: " + label);
-        }
-    }
-
-    private PhoneLabel parsePhoneLabel(String label) {
-        try {
-            return PhoneLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid phone label: " + label);
         }
     }
 }
