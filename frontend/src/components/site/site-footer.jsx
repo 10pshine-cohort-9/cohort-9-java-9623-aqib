@@ -41,7 +41,7 @@ export function SiteFooter() {
           Start keeping better track of your people
         </h2>
         <p className="max-w-md text-sm leading-relaxed text-primary-foreground/70">
-          Free for your first 500 contacts. No credit card, no import gymnastics.
+          No setup required. Add your first contact in under a minute.
         </p>
         <Button
           size="lg"
@@ -102,7 +102,7 @@ export function SiteFooter() {
       <Separator className="mt-12" />
 
       <div className="flex flex-col items-center justify-between gap-2 pt-6 text-xs text-muted-foreground sm:flex-row">
-        <p>© {new Date().getFullYear()} Kith. A frontend demo.</p>
+        <p>© {new Date().getFullYear()} Contact Management System. Built for the Java internship program.</p>
         <p>Designed for calm address books.</p>
       </div>
     </footer>
