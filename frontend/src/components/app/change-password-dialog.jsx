@@ -47,6 +47,7 @@ export function ChangePasswordDialog({ open, onOpenChange, onChanged }) {
     setCurrent('')
     setNext('')
     setConfirm('')
+    setVisible(false)
     setErrors({})
     setSubmitError('')
   }
@@ -177,7 +178,7 @@ export function ChangePasswordDialog({ open, onOpenChange, onChanged }) {
             <Button type="button" variant="ghost" onClick={resetFields}>
               Reset
             </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => { resetFields(); onOpenChange(false) }}>
               Cancel
             </Button>
             <Button type="submit" disabled={pending}>

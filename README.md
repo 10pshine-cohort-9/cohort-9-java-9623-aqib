@@ -65,7 +65,7 @@ them in your IDE/shell environment.
 cd frontend
 npm install
 npm run dev
-# UI available at http://localhost:5173
+# UI available at http://localhost:3000
 ```
 
 ## Running Tests
@@ -96,6 +96,7 @@ mvn clean verify -Psonar \
 |--------|---------------------|------------------------|
 | POST   | `/api/auth/register`| Register (email/phone) |
 | POST   | `/api/auth/login`   | Login, returns JWT      |
+| POST   | `/api/auth/refresh`  | Refresh access token   |
 
 ### Users
 | Method | Path                  | Description         |
