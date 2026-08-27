@@ -17,6 +17,7 @@ import com.example.contactmanager.exception.BadRequestException;
 import com.example.contactmanager.exception.ResourceNotFoundException;
 import com.example.contactmanager.repository.ContactRepository;
 import com.example.contactmanager.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,10 +37,13 @@ public class ContactServiceImpl implements ContactService {
 
     private final ContactRepository contactRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
-    public ContactServiceImpl(ContactRepository contactRepository, UserRepository userRepository) {
+    public ContactServiceImpl(ContactRepository contactRepository, UserRepository userRepository,
+                               EntityManager entityManager) {
         this.contactRepository = contactRepository;
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -53,8 +56,8 @@ public class ContactServiceImpl implements ContactService {
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
                 .title(StringUtils.hasText(request.getTitle()) ? request.getTitle().trim() : null)
+                .user(owner)
                 .build();
-        owner.addContact(contact);
         applyEmails(contact, request.getEmails());
         applyPhones(contact, request.getPhones());
 
@@ -115,7 +118,12 @@ public class ContactServiceImpl implements ContactService {
     }
 
     private void applyEmails(Contact contact, List<EmailDto> emails) {
-        new ArrayList<>(contact.getEmailAddresses()).forEach(contact::removeEmail);
+        contact.getEmailAddresses().clear();
+        // Force Hibernate to execute the orphan-removal DELETEs now, before the
+        // new rows are inserted. Without this flush the deferred INSERTs collide
+        // with the not-yet-deleted old rows on the unique (contact_id, email_address)
+        // constraint, causing a DataIntegrityViolationException on update.
+        entityManager.flush();
         if (emails == null || emails.isEmpty()) {
             return;
         }
@@ -132,7 +140,10 @@ public class ContactServiceImpl implements ContactService {
     }
 
     private void applyPhones(Contact contact, List<PhoneDto> phones) {
-        new ArrayList<>(contact.getPhoneNumbers()).forEach(contact::removePhone);
+        contact.getPhoneNumbers().clear();
+        // Force Hibernate to execute the orphan-removal DELETEs now, before the
+        // new rows are inserted (same reason as applyEmails).
+        entityManager.flush();
         if (phones == null || phones.isEmpty()) {
             return;
         }
@@ -159,7 +170,7 @@ public class ContactServiceImpl implements ContactService {
         try {
             return EmailLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid email label: " + label);
+            throw new BadRequestException("Unsupported email label: " + label);
         }
     }
 
@@ -167,7 +178,7 @@ public class ContactServiceImpl implements ContactService {
         try {
             return PhoneLabel.valueOf(label.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid phone label: " + label);
+            throw new BadRequestException("Unsupported phone label: " + label);
         }
     }
 }

@@ -7,6 +7,7 @@ import com.example.contactmanager.exception.BadRequestException;
 import com.example.contactmanager.exception.ResourceNotFoundException;
 import com.example.contactmanager.repository.ContactRepository;
 import com.example.contactmanager.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ class ContactServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private ContactServiceImpl contactService;
